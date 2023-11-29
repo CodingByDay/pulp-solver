@@ -20,34 +20,61 @@ def on_drag_motion(event):
     widget.startY = event.y
 
 
+def transform_to_schedule(tasks):
+    schedule = {}
+    for task in tasks.values():
+        for t in task:
+            resource_id = t['resource_id']
+            if resource_id not in schedule:
+                schedule[resource_id] = []
+            schedule[resource_id].append(t)
+    return schedule
+
+
 def create_gantt_chart(schedule):
     root = tk.Tk()
     root.title("Gantt Chart")
 
     canvas_width = 800
-    canvas_height = len(schedule) * 10000
+    canvas_height = 1000
 
     canvas = tk.Canvas(root, width=canvas_width, height=canvas_height, bg='white')
     canvas.pack()
 
-    resource_positions = {}  # Store resource positions on the chart
+    y = 50  # Initial y position
 
-    for idx, (_, tasks) in enumerate(schedule.items()):
-        y = idx * 100 + 30
+    for resource_id, tasks in schedule.items():
+        # Draw horizontal line as a divider between resource timelines
+        canvas.create_line(0, y, canvas_width, y, fill='black')
+
+        # Label for the resource
+        canvas.create_text(10, y - 20, text=f"Resource: {resource_id}", anchor=tk.W, fill='black')
+
+        # Separation box for each resource's tasks
+        start_x = float('inf')
+        end_x = float('-inf')
+        start_y = y
 
         for task in tasks:
-            resource_id = task['resource_id']
-            if resource_id not in resource_positions:
-                resource_positions[resource_id] = y
-
             start_time = task['start_time'] * 50
             end_time = task['end_time'] * 50
+
+            # Update the box dimensions
+            if start_time < start_x:
+                start_x = start_time
+            if end_time > end_x:
+                end_x = end_time
 
             # Draw rectangles representing tasks on each resource's timeline
             canvas.create_rectangle(start_time, y, end_time, y + 40, fill=task['color'], outline='black')
             canvas.create_text(start_time + 2, y + 20, text=task['job_name'], anchor=tk.W, fill='black')
 
-            y += 50
+            y += 50  # Move to the next line for the next task
+
+        # Enclose tasks of each resource within a box
+        canvas.create_rectangle(start_x, start_y, end_x, y + 40, outline='black')
+
+        y += 50  # Space between different resources
 
     root.mainloop()
 
@@ -57,7 +84,7 @@ def run_algorithm_and_update_gui():
     # Replace this with the actual function call and schedule retrieval based on your algorithm
     schedule = get_production_schedule()
 
-    create_gantt_chart(schedule)
+    create_gantt_chart(transform_to_schedule(schedule))
 
 
 def get_production_schedule():
@@ -66,7 +93,7 @@ def get_production_schedule():
     jobs = {
         1: {'duration': 3, 'resource': 'A', 'level': 1, 'name': 'Job_A'},
         2: {'duration': 2, 'resource': 'B', 'level': 2, 'name': 'Job_B'},
-        3: {'duration': 4, 'resource': 'A', 'level': 2, 'name': 'Job_C'},
+        3: {'duration': 4, 'resource': 'B', 'level': 2, 'name': 'Job_C'},
         4: {'duration': 2, 'resource': 'C', 'level': 2, 'name': 'Job_D'},
         5: {'duration': 5, 'resource': 'A', 'level': 3, 'name': 'Job_E'},
     }
@@ -81,7 +108,32 @@ def get_production_schedule():
     ]
 
     schedule = pulp_solve(jobs, dependencies)
+    tasks_by_resource = {}
+    for slot, tasks in schedule.items():
+        for task in tasks:
+            resource_id = task['resource_id']
+            if resource_id not in tasks_by_resource:
+                tasks_by_resource[resource_id] = []
+            tasks_by_resource[resource_id].append(task)
 
+    # Ensure non-overlapping schedules for tasks sharing the same resource
+    for resource, tasks in tasks_by_resource.items():
+        tasks.sort(key=lambda x: x['start_time'])  # Sort tasks by start time
+        for i in range(len(tasks) - 1):
+            current_task = tasks[i]
+            next_task = tasks[i + 1]
+            if current_task['end_time'] > next_task['start_time']:
+                # Resolve conflict by adjusting the start time of next task
+                new_start_time = current_task['end_time']
+                tasks[i + 1]['start_time'] = new_start_time
+                tasks[i + 1]['end_time'] = new_start_time + (tasks[i + 1]['end_time'] - tasks[i + 1]['start_time'])
+
+    # Updated schedule after resolving conflicts
+    updated_schedule = {}
+    for slot, tasks in schedule.items():
+        updated_schedule[slot] = tasks
+
+    print(schedule)
     return schedule
 
 
