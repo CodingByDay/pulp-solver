@@ -15,17 +15,16 @@ class ProductionJob:
         self.end_time = None
 
 
-
-
-
 class TimeSlot:
     def __init__(self, start, end):
         self.start = start
         self.end = end
 
+
 class ProductionCalendar:
     def __init__(self, work_periods):
         self.work_periods = [TimeSlot(start, end) for start, end in work_periods]
+
 
 def evaluate(individual, jobs):
     valid_jobs = [job for job in jobs if job.end_time is not None and job.deadline is not None]
@@ -55,6 +54,7 @@ def dynamic_priority(job, current_time):
     else:
         return 0
 
+
 def create_production_schedule(jobs, company_calendar, resource_calendars):
     # Particle Swarm Optimization parameters
     POPULATION_SIZE = 10
@@ -62,7 +62,8 @@ def create_production_schedule(jobs, company_calendar, resource_calendars):
     ITERATIONS = 10
 
     # Create a creator for the individual (schedule)
-    creator.create("FitnessMulti", base.Fitness, weights=(1.0, -1.0, -1.0, -1.0))  # Minimize duration, idle time, utilization, and deadline deviation
+    creator.create("FitnessMulti", base.Fitness,
+                   weights=(1.0, -1.0, -1.0, -1.0))  # Minimize duration, idle time, utilization, and deadline deviation
     creator.create("Particle", list, fitness=creator.FitnessMulti, speed=list, pmin=None, pmax=None, best=None)
 
     # Create a toolbox for the PSO algorithm
@@ -155,9 +156,27 @@ def create_production_schedule(jobs, company_calendar, resource_calendars):
 
     return jobs
 
+
+class UncertainProductionJob(ProductionJob):
+    def __init__(self, id, name, level, min_duration, max_duration, resource_requirements, dependencies=None,
+                 deadline=None, time_window=None, alternative_resources=None):
+        super().__init__(id, name, 0, resource_requirements, dependencies, deadline)
+        self.min_duration = min_duration
+        self.max_duration = max_duration
+        self.actual_duration = 0
+        self.time_window = time_window  # Time window during which the job can be scheduled
+        self.alternative_resources = alternative_resources if alternative_resources else []
+        self.level = level
+
+
+
+
+
+
 # Example usage
 if __name__ == "__main__":
-    company_calendar = ProductionCalendar([(8, 12), (13, 17)])  # Company works from 8 am to 5 pm with a break from 12 pm to 1 pm
+    company_calendar = ProductionCalendar(
+        [(8, 12), (13, 17)])  # Company works from 8 am to 5 pm with a break from 12 pm to 1 pm
 
     resource_calendars = {
         "resource1": ProductionCalendar([(8, 12), (13, 17)]),
@@ -165,19 +184,10 @@ if __name__ == "__main__":
         "resource3": ProductionCalendar([(8, 12), (13, 16)]),
     }
 
-    class UncertainProductionJob(ProductionJob):
-        def __init__(self, id, name, level, min_duration, max_duration, resource_requirements, dependencies=None, deadline=None, time_window=None, alternative_resources=None):
-            super().__init__(id, name, 0, resource_requirements, dependencies, deadline)
-            self.min_duration = min_duration
-            self.max_duration = max_duration
-            self.actual_duration = 0
-            self.time_window = time_window  # Time window during which the job can be scheduled
-            self.alternative_resources = alternative_resources if alternative_resources else []
-            self.level = level
-
     job1 = UncertainProductionJob(1, "Job1", 2, 4, 6, {"resource1": 1}, time_window=(8, 12), deadline=15)
-    job2 = UncertainProductionJob(2, "Job2", 1,  2, 4, {"resource1": 1}, deadline=20, alternative_resources=["resource2"])
-    job3 = UncertainProductionJob(3, "Job3", 1, 3, 5, {"resource1": 1},  time_window=(13, 16))
+    job2 = UncertainProductionJob(2, "Job2", 1, 2, 4, {"resource1": 1}, deadline=20,
+                                  alternative_resources=["resource2"])
+    job3 = UncertainProductionJob(3, "Job3", 1, 3, 5, {"resource1": 1}, time_window=(13, 16))
     job4 = UncertainProductionJob(4, "Job4", 2, 1, 3, {"resource1": 1}, )
 
     jobs = [job1, job2, job3, job4]
@@ -190,4 +200,5 @@ if __name__ == "__main__":
 
     if scheduled_jobs:
         for job in scheduled_jobs:
-            print(f"Job {job.name} scheduled from {job.start_time} to {job.end_time} with resources: {job.resource_requirements}, actual duration: {job.actual_duration}, time window: {job.time_window}, alternative resources: {job.alternative_resources}, deadline: {job.deadline}")
+            print(
+                f"Job {job.name} scheduled from {job.start_time} to {job.end_time} with resources: {job.resource_requirements}, actual duration: {job.actual_duration}, time window: {job.time_window}, alternative resources: {job.alternative_resources}, deadline: {job.deadline}")
