@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import Canvas, Frame
 from pulp_solver import *
+import json
 
 
 # Function to handle the drag-and-drop functionality
@@ -94,7 +95,7 @@ def get_production_schedule():
         1: {'duration': 3, 'resource': 'A', 'level': 1, 'name': 'Job_A'},
         2: {'duration': 2, 'resource': 'B', 'level': 2, 'name': 'Job_B'},
         3: {'duration': 4, 'resource': 'B', 'level': 2, 'name': 'Job_C'},
-        4: {'duration': 2, 'resource': 'C', 'level': 2, 'name': 'Job_D'},
+        4: {'duration': 5, 'resource': 'C', 'level': 2, 'name': 'Job_D'},
         5: {'duration': 5, 'resource': 'A', 'level': 3, 'name': 'Job_E'},
     }
     # Job dependencies (lower level needs to finish before higher level begins)
@@ -106,6 +107,12 @@ def get_production_schedule():
         (3, 5),
         (4, 5),
     ]
+    data = {
+        'jobs': jobs,
+        'dependencies': dependencies
+    }
+
+    json_data = json.dumps(data, indent=4)
 
     schedule = pulp_solve(jobs, dependencies)
     tasks_by_resource = {}
