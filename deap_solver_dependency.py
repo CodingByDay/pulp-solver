@@ -167,18 +167,19 @@ if __name__ == "__main__":
             self.time_window = time_window  # Time window during which the job can be scheduled
             self.alternative_resources = alternative_resources if alternative_resources else []
 
-    job1 = UncertainProductionJob(1, "Job1", 4, 6, {"resource1": 4})
-    job2 = UncertainProductionJob(2, "Job2", 2, 4, {"resource2": 2}, dependencies=[1])
-    job3 = UncertainProductionJob(3, "Job3", 3, 5, {"resource3": 1}, dependencies=[1, 2])
-    job4 = UncertainProductionJob(5, "Job5", 1, 3, {"resource3": 1})
+    job1 = UncertainProductionJob(1, "Job1", 4, 6, {"resource1": 4}, dependencies=[2])
+    job2 = UncertainProductionJob(2, "Job2", 2, 4, {"resource2": 2})
+    # job3 = UncertainProductionJob(3, "Job3", 3, 5, {"resource3": 1}, dependencies=[1, 2])
+    # job4 = UncertainProductionJob(5, "Job5", 1, 3, {"resource3": 1})
 
-    jobs = [job1, job2, job3, job4]
+    jobs = [job1, job2]
 
     # Sort jobs based on dynamic priorities
     current_time = 0
     jobs.sort(key=lambda job: dynamic_priority(job, current_time), reverse=True)
 
     scheduled_jobs = create_production_schedule(jobs, company_calendar, resource_calendars)
+    scheduled_jobs = sorted_jobs = sorted(scheduled_jobs, key=lambda job: job.start_time)
 
     if scheduled_jobs:
         for job in scheduled_jobs:
