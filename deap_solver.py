@@ -80,6 +80,11 @@ def create_production_schedule(jobs, company_calendar, resource_calendars):
 
     # Sort jobs based on level (lower level first)
     jobs.sort(key=lambda job: job.level)
+
+    # Group jobs by level
+    grouped_jobs = {}
+    for job in jobs:
+        grouped_jobs.setdefault(job.level, []).append(job)
     # Initialize the particle population
     population = toolbox.population(n=POPULATION_SIZE)
 
@@ -124,12 +129,29 @@ def create_production_schedule(jobs, company_calendar, resource_calendars):
 
     # Update job start and end times based on the best individual
     current_time = 0
-    for job, duration in zip(jobs, best_particle):
-        # Use a midpoint in the duration range as the actual duration
-        job.actual_duration = (job.min_duration + job.max_duration) / 2
-        job.start_time = current_time
-        job.end_time = current_time + job.actual_duration
-        current_time = max(current_time, job.end_time)
+    for level, level_jobs in grouped_jobs.items():
+        # Filter jobs on the same level that don't use the same resource and have no dependencies
+        same_time_jobs = []
+        used_resources = set()
+        for job in level_jobs:
+            resource_key = frozenset(job.resource_requirements.items())  # Convert dict to frozenset for hashing
+            if job.dependencies or resource_key in used_resources:
+                same_time_jobs.append(job)  # If job has dependencies or uses the same resource, add it to the list
+            else:
+                same_time_jobs.append(job)
+                used_resources.add(resource_key)
+
+        # Update start and end times for jobs that can run simultaneously
+        max_start_time = 0  # Track the maximum start time for jobs on the same level
+        for job in same_time_jobs:
+            if not job.dependencies:
+                job.actual_duration = (job.min_duration + job.max_duration) / 2
+                job.start_time = current_time if job.start_time is None else job.start_time
+                job.end_time = job.start_time + job.actual_duration
+                max_start_time = max(max_start_time, job.end_time)  # Update the maximum start time
+
+        # Update current_time based on the maximum start time of jobs on the same level
+        current_time = max(max_start_time, current_time)
 
     return jobs
 
@@ -154,9 +176,9 @@ if __name__ == "__main__":
             self.level = level
 
     job1 = UncertainProductionJob(1, "Job1", 2, 4, 6, {"resource1": 1}, time_window=(8, 12), deadline=15)
-    job2 = UncertainProductionJob(2, "Job2", 3,  2, 4, {"resource1": 1}, deadline=20, alternative_resources=["resource2"])
-    job3 = UncertainProductionJob(3, "Job3", 1, 3, 5, {"resource1": 1}, dependencies=[1, 2], time_window=(13, 16))
-    job4 = UncertainProductionJob(4, "Job4", 4, 1, 3, {"resource1": 1}, dependencies=[2])
+    job2 = UncertainProductionJob(2, "Job2", 1,  2, 4, {"resource1": 1}, deadline=20, alternative_resources=["resource2"])
+    job3 = UncertainProductionJob(3, "Job3", 1, 3, 5, {"resource1": 1},  time_window=(13, 16))
+    job4 = UncertainProductionJob(4, "Job4", 2, 1, 3, {"resource1": 1}, )
 
     jobs = [job1, job2, job3, job4]
 
