@@ -17,6 +17,7 @@ class ProductionJob:
 
 
 
+
 class TimeSlot:
     def __init__(self, start, end):
         self.start = start
@@ -74,6 +75,11 @@ def create_production_schedule(jobs, company_calendar, resource_calendars):
     toolbox.register("select", tools.selBest)
     toolbox.register("evaluate", evaluate, jobs=jobs)
 
+    current_time = 0
+    jobs.sort(key=lambda job: dynamic_priority(job, current_time), reverse=True)
+
+    # Sort jobs based on level (lower level first)
+    jobs.sort(key=lambda job: job.level)
     # Initialize the particle population
     population = toolbox.population(n=POPULATION_SIZE)
 
@@ -138,18 +144,19 @@ if __name__ == "__main__":
     }
 
     class UncertainProductionJob(ProductionJob):
-        def __init__(self, id, name, min_duration, max_duration, resource_requirements, dependencies=None, deadline=None, time_window=None, alternative_resources=None):
+        def __init__(self, id, name, level, min_duration, max_duration, resource_requirements, dependencies=None, deadline=None, time_window=None, alternative_resources=None):
             super().__init__(id, name, 0, resource_requirements, dependencies, deadline)
             self.min_duration = min_duration
             self.max_duration = max_duration
             self.actual_duration = 0
             self.time_window = time_window  # Time window during which the job can be scheduled
             self.alternative_resources = alternative_resources if alternative_resources else []
+            self.level = level
 
-    job1 = UncertainProductionJob(1, "Job1", 4, 6, {"resource1": 2, "resource2": 1}, time_window=(8, 12), deadline=15)
-    job2 = UncertainProductionJob(2, "Job2", 2, 4, {"resource1": 1, "resource3": 3}, deadline=20, alternative_resources=["resource2"])
-    job3 = UncertainProductionJob(3, "Job3", 3, 5, {"resource2": 2, "resource3": 1}, dependencies=[1, 2], time_window=(13, 16))
-    job4 = UncertainProductionJob(4, "Job4", 1, 3, {"resource1": 1, "resource2": 1}, dependencies=[2])
+    job1 = UncertainProductionJob(1, "Job1", 2, 4, 6, {"resource1": 1}, time_window=(8, 12), deadline=15)
+    job2 = UncertainProductionJob(2, "Job2", 3,  2, 4, {"resource1": 1}, deadline=20, alternative_resources=["resource2"])
+    job3 = UncertainProductionJob(3, "Job3", 1, 3, 5, {"resource1": 1}, dependencies=[1, 2], time_window=(13, 16))
+    job4 = UncertainProductionJob(4, "Job4", 4, 1, 3, {"resource1": 1}, dependencies=[2])
 
     jobs = [job1, job2, job3, job4]
 
