@@ -7,6 +7,9 @@ import json
 from tkinter import ttk
 from data import *
 
+root = tk.Tk()
+data = []  # Global result variable
+
 
 def show_dialog():
     result = simpledialog.askstring("Input", "Enter your name:")
@@ -22,14 +25,14 @@ def on_drag_start(event, task):
     widget.task = task
 
 
-def create_toolbar(root):
+def create_toolbar():
     toolbar = ttk.Frame(root)
     toolbar.pack(side=tk.TOP, fill=tk.X)
     algo_menu = ttk.Combobox(toolbar, values=["DEAP"])
     algo_menu.set("Izberite algoritem")
     algo_menu.pack(side=tk.LEFT, padx=10)
 
-    run_button = ttk.Button(toolbar, text="Run", command=lambda: run_algorithm_and_update_gui(algo_menu.get(), root))
+    run_button = ttk.Button(toolbar, text="Run", command=lambda: run_algorithm_and_update_gui(algo_menu.get()))
     run_button.pack(side=tk.LEFT, padx=5)
 
     # Add more options/buttons as needed
@@ -75,7 +78,9 @@ def convert_to_task_structure(jobs):
     return task_structure
 
 
-def create_gantt_chart(root, schedule):
+def create_gantt_chart(schedule):
+    global data
+    data = schedule
     canvas = root.canvas  # Get the canvas from the root
     canvas.delete("all")  # Clear the canvas before redrawing
 
@@ -117,12 +122,12 @@ def create_gantt_chart(root, schedule):
     root.mainloop()
 
 
-def run_algorithm_and_update_gui(algorithm, root):
+def run_algorithm_and_update_gui(algorithm):
     if algorithm == "DEAP":
         schedule = get_production_schedule_deap()
-        create_gantt_chart(root, convert_to_task_structure(schedule))
+        create_gantt_chart(convert_to_task_structure(schedule))
     else:
-        create_gantt_chart(root, {})
+        create_gantt_chart({})
 
 
 def get_production_schedule_deap():
@@ -194,7 +199,6 @@ def get_production_schedule_pulp():
 # Running the application
 
 def main():
-    root = tk.Tk()
     root.title("FactoryFusion - Advanced production planning")
     # Set window attributes for full-screen mode
 
@@ -202,17 +206,51 @@ def main():
     # Escape key to exit full-screen mode
     icon = tk.PhotoImage(file='icon.png')
     root.iconphoto(True, icon)
-    file_menu(root)
+    file_menu()
     # toolbar = create_toolbar(root)
     canvas_width = root.winfo_screenwidth()  # Get the screen width
     canvas_height = root.winfo_screenheight()  # Get the screen height
     canvas = tk.Canvas(root, width=canvas_width, height=canvas_height, bg='white')
     canvas.pack(fill=tk.BOTH, expand=True)  # Fill the whole window
     root.canvas = canvas  # Attach canvas to the root to access it later
-    run_algorithm_and_update_gui("DEAP", root)  # Initial chart
+    run_algorithm_and_update_gui("DEAP")  # Initial chart
     root.mainloop()
 
-def file_menu(root):
+
+def apply_root_filter(option):
+    if option == "Delovni nalog":
+        pass
+    elif option == "Resurs":
+        pass
+    elif option == "Operacije":
+        pass
+
+
+def create_filter_window():
+    def apply_filter():
+        selected_option = filter_var.get()
+        print(f"Selected option: {selected_option}")
+
+    # Create a new window
+    filter_window = tk.Toplevel(root)
+    filter_window.title("Filter Options")
+
+    # Add a label in the new window
+    label = tk.Label(filter_window, text="Izberite kriterij")
+    label.pack()
+
+    # Create a dropdown menu for filter options
+    filter_var = tk.StringVar()
+    filter_options = ["Delovni nalog", "Resurs", "Operacije"]
+    dropdown = ttk.Combobox(filter_window, textvariable=filter_var, values=filter_options)
+    dropdown.pack()
+
+    # Add a button to apply the filter
+    filter_button = tk.Button(filter_window, text="Filtriraj", command=apply_filter)
+    filter_button.pack()
+
+
+def file_menu():
     menubar = tk.Menu(root)
     root.config(menu=menubar)
     file_menu = tk.Menu(menubar)
@@ -222,13 +260,14 @@ def file_menu(root):
     )
     file_menu.add_command(
         label='Filteri',
-        command=root.destroy,
+        command=create_filter_window,
     )
     menubar.add_cascade(
         label="Opcije",
         menu=file_menu,
         underline=0
     )
+
 
 if __name__ == "__main__":
     main()

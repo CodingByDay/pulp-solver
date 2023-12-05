@@ -47,20 +47,7 @@ def get_data():
                 "acResource": "Resource1",
                 "acName": "Operation 1"
             },
-            {
-                "acKey": "WO1",
-                "anNo": 2,
-                "anQty": 450,
-                "acResource": "Resource2",
-                "acName": "Operation 2"
-            },
-            {
-                "acKey": "WO1",
-                "anNo": 3,
-                "anQty": 300,
-                "acResource": "Resource1",
-                "acName": "Operation 3"
-            },
+
             {
                 "acKey": "WO2",
                 "anNo": 1,
@@ -69,80 +56,10 @@ def get_data():
                 "acName": "Operation 1"
             },
             {
-                "acKey": "WO2",
-                "anNo": 2,
-                "anQty": 500,
-                "acResource": "Resource2",
-                "acName": "Operation 2"
-            },
-            {
-                "acKey": "WO2",
-                "anNo": 3,
-                "anQty": 700,
-                "acResource": "Resource4",
-                "acName": "Operation 1"
-            },
-            {
-                "acKey": "WO2",
-                "anNo": 4,
-                "anQty": 600,
-                "acResource": "Resource1",
-                "acName": "Operation 1"
-            },
-            {
-                "acKey": "WO2",
-                "anNo": 5,
-                "anQty": 450,
-                "acResource": "Resource2",
-                "acName": "Operation 2"
-            },
-            {
                 "acKey": "WO3",
                 "anNo": 1,
                 "anQty": 300,
-                "acResource": "Resource1",
-                "acName": "Operation 3"
-            },
-            {
-                "acKey": "WO3",
-                "anNo": 2,
-                "anQty": 400,
                 "acResource": "Resource3",
-                "acName": "Operation 1"
-            },
-            {
-                "acKey": "WO3",
-                "anNo": 3,
-                "anQty": 500,
-                "acResource": "Resource2",
-                "acName": "Operation 2"
-            },
-            {
-                "acKey": "WO3",
-                "anNo": 4,
-                "anQty": 700,
-                "acResource": "Resource4",
-                "acName": "Operation 1"
-            },
-            {
-                "acKey": "WO3",
-                "anNo": 5,
-                "anQty": 600,
-                "acResource": "Resource1",
-                "acName": "Operation 1"
-            },
-            {
-                "acKey": "WO3",
-                "anNo": 6,
-                "anQty": 450,
-                "acResource": "Resource2",
-                "acName": "Operation 2"
-            },
-            {
-                "acKey": "WO3",
-                "anNo": 3,
-                "anQty": 300,
-                "acResource": "Resource1",
                 "acName": "Operation 3"
             },
             {
@@ -196,7 +113,7 @@ def parse_json_to_production_schedule():
             'id': counter,
             'name': name,
             'dependency': parent,
-            'operations': []
+            'operations': [],
         }
         counter += 1
         # Add the job to the list of jobs
