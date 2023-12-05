@@ -153,6 +153,16 @@ def create_production_schedule(jobs, company_calendar, resource_calendars):
 
     return jobs
 
+class UncertainProductionJob(ProductionJob):
+    def __init__(self, id, name, min_duration, max_duration, resource_requirements, dependencies=None,
+                 deadline=None, time_window=None, alternative_resources=None):
+        super().__init__(id, name, 0, resource_requirements, dependencies, deadline)
+        self.min_duration = min_duration
+        self.max_duration = max_duration
+        self.actual_duration = 0
+        self.time_window = time_window  # Time window during which the job can be scheduled
+        self.alternative_resources = alternative_resources if alternative_resources else []
+
 
 # Example usage
 if __name__ == "__main__":
@@ -164,17 +174,6 @@ if __name__ == "__main__":
         "resource2": ProductionCalendar([(9, 12), (13, 18)]),
         "resource3": ProductionCalendar([(8, 12), (13, 16)]),
     }
-
-
-    class UncertainProductionJob(ProductionJob):
-        def __init__(self, id, name, min_duration, max_duration, resource_requirements, dependencies=None,
-                     deadline=None, time_window=None, alternative_resources=None):
-            super().__init__(id, name, 0, resource_requirements, dependencies, deadline)
-            self.min_duration = min_duration
-            self.max_duration = max_duration
-            self.actual_duration = 0
-            self.time_window = time_window  # Time window during which the job can be scheduled
-            self.alternative_resources = alternative_resources if alternative_resources else []
 
 
     # test 1

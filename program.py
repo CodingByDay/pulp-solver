@@ -70,7 +70,6 @@ def convert_to_task_structure(jobs):
             'end_time': job.end_time if job.end_time else 0.0,
             'color': 'blue',
             'resource_id': next(iter(job.resource_requirements)),
-            'level': job.level,
             'job_name': job.name
         })
     return task_structure
