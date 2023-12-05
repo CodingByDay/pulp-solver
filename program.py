@@ -80,39 +80,39 @@ def create_gantt_chart(root, schedule):
     canvas.delete("all")  # Clear the canvas before redrawing
 
     y = 50  # Initial y position
-    if schedule != {}:
-        for resource_id, tasks in schedule.items():
-            # Draw horizontal line as a divider between resource timelines
-            canvas.create_line(0, y, canvas.winfo_reqwidth(), y, fill='black')
+    y = 50  # Starting y-coordinate for the Gantt chart
+    for resource_id, tasks in schedule.items():
+        # Draw horizontal line as a divider between resource timelines
+        canvas.create_line(0, y, canvas.winfo_reqwidth(), y, fill='black')
 
-            # Label for the resource
-            canvas.create_text(10, y - 20, text=f"Resource: {resource_id}", anchor=tk.W, fill='black')
+        # Label for the resource
+        canvas.create_text(10, y - 20, text=f"Resource: {resource_id}", anchor=tk.W, fill='black')
 
-            # Separation box for each resource's tasks
-            start_x = float('inf')
-            end_x = float('-inf')
-            start_y = y
+        # Initialize variables for resource-specific timeline
+        start_x = float('inf')
+        end_x = float('-inf')
+        start_y = y
 
-            for task in tasks:
-                start_time = task['start_time'] * 50
-                end_time = task['end_time'] * 50
+        for task in tasks:
+            start_time = task['start_time'] * 50
+            end_time = task['end_time'] * 50
 
-                # Update the box dimensions
-                if start_time < start_x:
-                    start_x = start_time
-                if end_time > end_x:
-                    end_x = end_time
+            # Update the box dimensions
+            if start_time < start_x:
+                start_x = start_time
+            if end_time > end_x:
+                end_x = end_time
 
-                # Draw rectangles representing tasks on each resource's timeline
-                canvas.create_rectangle(start_time, y, end_time, y + 40, fill=task['color'], outline='black')
-                canvas.create_text(start_time + 2, y + 20, text=task['job_name'], anchor=tk.W, fill='black')
+            # Draw rectangles representing tasks on each resource's timeline
+            canvas.create_rectangle(start_time, y, end_time, y + 40, fill=task['color'], outline='black')
+            canvas.create_text(start_time + 2, y + 20, text=task['job_name'], anchor=tk.W, fill='black')
 
-                y += 50  # Move to the next line for the next task
+            y += 50  # Move to the next line for the next task
 
-            # Enclose tasks of each resource within a box
-            canvas.create_rectangle(start_x, start_y, end_x, y + 40, outline='black')
+        # Enclose tasks of each resource within a box
+        canvas.create_rectangle(start_x, start_y, end_x, y + 40, outline='black')
 
-            y += 50  # Space between different resources
+        y += 50  # Space between different resources
 
     root.mainloop()
 
@@ -202,16 +202,33 @@ def main():
     # Escape key to exit full-screen mode
     icon = tk.PhotoImage(file='icon.png')
     root.iconphoto(True, icon)
-
-    toolbar = create_toolbar(root)
+    file_menu(root)
+    # toolbar = create_toolbar(root)
     canvas_width = root.winfo_screenwidth()  # Get the screen width
     canvas_height = root.winfo_screenheight()  # Get the screen height
     canvas = tk.Canvas(root, width=canvas_width, height=canvas_height, bg='white')
     canvas.pack(fill=tk.BOTH, expand=True)  # Fill the whole window
     root.canvas = canvas  # Attach canvas to the root to access it later
-    run_algorithm_and_update_gui("", root)  # Initial chart
+    run_algorithm_and_update_gui("DEAP", root)  # Initial chart
     root.mainloop()
 
+def file_menu(root):
+    menubar = tk.Menu(root)
+    root.config(menu=menubar)
+    file_menu = tk.Menu(menubar)
+    file_menu.add_command(
+        label='Izhod',
+        command=root.destroy,
+    )
+    file_menu.add_command(
+        label='Filteri',
+        command=root.destroy,
+    )
+    menubar.add_cascade(
+        label="Opcije",
+        menu=file_menu,
+        underline=0
+    )
 
 if __name__ == "__main__":
     main()
