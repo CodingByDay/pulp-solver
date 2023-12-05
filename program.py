@@ -5,6 +5,7 @@ from pulp_solver import *
 from deap_solver import *
 import json
 from tkinter import ttk
+from data import *
 
 
 def show_dialog():
@@ -24,12 +25,11 @@ def on_drag_start(event, task):
 def create_toolbar(root):
     toolbar = ttk.Frame(root)
     toolbar.pack(side=tk.TOP, fill=tk.X)
-
-    algo_menu = ttk.Combobox(toolbar, values=["DEAP", "PULP"])
-    algo_menu.set("Select Algorithm")
+    algo_menu = ttk.Combobox(toolbar, values=["DEAP"])
+    algo_menu.set("Izberite algoritem")
     algo_menu.pack(side=tk.LEFT, padx=10)
 
-    run_button = ttk.Button(toolbar, text="Run", command=lambda: run_algorithm_and_update_gui(algo_menu.get()))
+    run_button = ttk.Button(toolbar, text="Run", command=lambda: run_algorithm_and_update_gui(algo_menu.get(), root))
     run_button.pack(side=tk.LEFT, padx=5)
 
     # Add more options/buttons as needed
@@ -64,7 +64,6 @@ def convert_to_task_structure(jobs):
     for job in jobs:
         if job.id not in task_structure:
             task_structure[job.id] = []
-
         task_structure[job.id].append({
             'task_id': job.id,
             'start_time': job.start_time if job.start_time else 0.0,
@@ -77,86 +76,58 @@ def convert_to_task_structure(jobs):
     return task_structure
 
 
-def create_gantt_chart(schedule):
-    root = tk.Tk()
-    root.title("Production planning.")
-    toolbar = create_toolbar(root)
-    canvas_width = 800
-    canvas_height = 1000
-
-    canvas = tk.Canvas(root, width=canvas_width, height=canvas_height, bg='white')
-    canvas.pack()
+def create_gantt_chart(root, schedule):
+    canvas = root.canvas  # Get the canvas from the root
+    canvas.delete("all")  # Clear the canvas before redrawing
 
     y = 50  # Initial y position
+    if schedule != {}:
+        for resource_id, tasks in schedule.items():
+            # Draw horizontal line as a divider between resource timelines
+            canvas.create_line(0, y, canvas.winfo_reqwidth(), y, fill='black')
 
+            # Label for the resource
+            canvas.create_text(10, y - 20, text=f"Resource: {resource_id}", anchor=tk.W, fill='black')
 
+            # Separation box for each resource's tasks
+            start_x = float('inf')
+            end_x = float('-inf')
+            start_y = y
 
-    for resource_id, tasks in schedule.items():
-        # Draw horizontal line as a divider between resource timelines
-        canvas.create_line(0, y, canvas_width, y, fill='black')
+            for task in tasks:
+                start_time = task['start_time'] * 50
+                end_time = task['end_time'] * 50
 
-        # Label for the resource
-        canvas.create_text(10, y - 20, text=f"Resource: {resource_id}", anchor=tk.W, fill='black')
+                # Update the box dimensions
+                if start_time < start_x:
+                    start_x = start_time
+                if end_time > end_x:
+                    end_x = end_time
 
-        # Separation box for each resource's tasks
-        start_x = float('inf')
-        end_x = float('-inf')
-        start_y = y
+                # Draw rectangles representing tasks on each resource's timeline
+                canvas.create_rectangle(start_time, y, end_time, y + 40, fill=task['color'], outline='black')
+                canvas.create_text(start_time + 2, y + 20, text=task['job_name'], anchor=tk.W, fill='black')
 
-        for task in tasks:
-            start_time = task['start_time'] * 50
-            end_time = task['end_time'] * 50
+                y += 50  # Move to the next line for the next task
 
-            # Update the box dimensions
-            if start_time < start_x:
-                start_x = start_time
-            if end_time > end_x:
-                end_x = end_time
+            # Enclose tasks of each resource within a box
+            canvas.create_rectangle(start_x, start_y, end_x, y + 40, outline='black')
 
-            # Draw rectangles representing tasks on each resource's timeline
-            canvas.create_rectangle(start_time, y, end_time, y + 40, fill=task['color'], outline='black')
-            canvas.create_text(start_time + 2, y + 20, text=task['job_name'], anchor=tk.W, fill='black')
-
-            y += 50  # Move to the next line for the next task
-
-        # Enclose tasks of each resource within a box
-        canvas.create_rectangle(start_x, start_y, end_x, y + 40, outline='black')
-
-        y += 50  # Space between different resources
+            y += 50  # Space between different resources
 
     root.mainloop()
 
 
-def run_algorithm_and_update_gui(algorithm):
-    # Run your production planning algorithm here and get the schedule
-    # Replace this with the actual function call and schedule retrieval based on your algorithm
+def run_algorithm_and_update_gui(algorithm, root):
     if algorithm == "DEAP":
         schedule = get_production_schedule_deap()
-        create_gantt_chart(convert_to_task_structure(schedule))
-
-    elif algorithm == "PULP":
-
-        schedule = get_production_schedule_pulp()
-        create_gantt_chart(transform_to_schedule(schedule))
+        create_gantt_chart(root, convert_to_task_structure(schedule))
+    else:
+        create_gantt_chart(root, {})
 
 
 def get_production_schedule_deap():
-    company_calendar = ProductionCalendar(
-        [(8, 12), (13, 17)])  # Company works from 8 am to 5 pm with a break from 12 pm to 1 pm
-
-    resource_calendars = {
-        "resource1": ProductionCalendar([(8, 12), (13, 17)]),
-        "resource2": ProductionCalendar([(9, 12), (13, 18)]),
-        "resource3": ProductionCalendar([(8, 12), (13, 16)]),
-    }
-
-    job1 = UncertainProductionJob(1, "Job1", 2, 4, 6, {"resource1": 1}, time_window=(8, 12), deadline=15)
-    job2 = UncertainProductionJob(2, "Job2", 1, 2, 4, {"resource1": 1}, deadline=20,
-                                  alternative_resources=["resource2"])
-    job3 = UncertainProductionJob(3, "Job3", 1, 3, 5, {"resource1": 1}, time_window=(13, 16))
-    job4 = UncertainProductionJob(4, "Job4", 2, 1, 3, {"resource1": 1}, )
-
-    jobs = [job1, job2, job3, job4]
+    company_calendar, resource_calendars, jobs = parse_json_to_production_schedule()
 
     # Sort jobs based on dynamic priorities
     current_time = 0
@@ -223,5 +194,25 @@ def get_production_schedule_pulp():
 
 # Running the application
 
+def main():
+    root = tk.Tk()
+    root.title("FactoryFusion - Advanced production planning")
+    # Set window attributes for full-screen mode
+
+    root.iconbitmap('icon.ico')
+    # Escape key to exit full-screen mode
+    icon = tk.PhotoImage(file='icon.png')
+    root.iconphoto(True, icon)
+
+    toolbar = create_toolbar(root)
+    canvas_width = root.winfo_screenwidth()  # Get the screen width
+    canvas_height = root.winfo_screenheight()  # Get the screen height
+    canvas = tk.Canvas(root, width=canvas_width, height=canvas_height, bg='white')
+    canvas.pack(fill=tk.BOTH, expand=True)  # Fill the whole window
+    root.canvas = canvas  # Attach canvas to the root to access it later
+    run_algorithm_and_update_gui("", root)  # Initial chart
+    root.mainloop()
+
+
 if __name__ == "__main__":
-    run_algorithm_and_update_gui("PULP")
+    main()
