@@ -149,7 +149,7 @@ def create_production_schedule(jobs, company_calendar, resource_calendars):
         job.actual_duration = (job.min_duration + job.max_duration) / 2
         job.end_time = job.start_time + job.actual_duration
 
-    # ... existing code ...
+
 
     return jobs
 

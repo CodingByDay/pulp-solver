@@ -21,23 +21,14 @@ def get_data():
             {
                 "acKey": "WO3",
                 "adDeliveryDeadline": None,
-                "acKeyParent": "WO1"
+                "acKeyParent": ""
             },
             {
                 "acKey": "WO4",
                 "adDeliveryDeadline": "2023-12-15",
-                "acKeyParent": ""
+                "acKeyParent": "W03"
             },
-            {
-                "acKey": "WO5",
-                "adDeliveryDeadline": None,
-                "acKeyParent": "WO4"
-            },
-            {
-                "acKey": "WO6",
-                "adDeliveryDeadline": None,
-                "acKeyParent": "WO4"
-            }
+
         ],
         "test_WOOperations": [
             {
