@@ -155,12 +155,16 @@ def create_production_schedule(jobs, company_calendar, resource_calendars, histo
         # Perform topological sorting to determine the order of job scheduling
         sorted_job_ids = topological_sort(dag)
 
+        current_time = min(job.time_window[0] for job in jobs if job.time_window) if any(
+            job.time_window for job in jobs) else 0
+
         for job_id in sorted_job_ids:
             job = dag.nodes[job_id]['job']
 
             # Find the particle index corresponding to the job
             particle_index = jobs.index(job)
-            current_time = 0
+
+
 
             # Check if the job can be scheduled at the current time
             if check_time_window(job, current_time) and check_resource_availability(job, resource_calendars,
