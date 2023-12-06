@@ -18,20 +18,15 @@ class ProductionCalendar:
 
 
 def evaluate(individual, jobs):
-    # Calculate the total duration of the schedule
     total_duration = sum(individual)
-
-    # Calculate the total idle time in the schedule
     idle_time = max(0, max(individual) - total_duration)
-
-    # Calculate the total resource utilization
     total_utilization = sum([job.actual_duration for job, duration in zip(jobs, individual)])
 
     # Calculate the total deviation from deadlines
-    total_deadline_deviation = sum([max(0, job.end_time - job.deadline) for job in jobs if job.deadline is not None])
+    total_deadline_deviation = 0 #sum([max(0, job.end_time - job.deadline) if job.deadline is not None else 0 for job in jobs])
 
-    # Return a tuple of the multiple objectives
     return total_duration, -idle_time, total_utilization, total_deadline_deviation
+
 
 
 def dynamic_priority(job, current_time):
@@ -127,30 +122,28 @@ def create_production_schedule(jobs, company_calendar, resource_calendars, histo
                    weights=(1.0, -1.0, -1.0, -1.0))  # Minimize duration, idle time, utilization, and deadline deviation
     creator.create("Particle", list, fitness=creator.FitnessMulti, speed=list, pmin=None, pmax=None, best=None)
 
-    # Create a toolbox for the PSO algorithm
-    toolbox = base.Toolbox()
-    toolbox.register("particle", tools.initRepeat, creator.Particle,
-                     lambda: random.uniform(0, max([job.max_duration for job in jobs])), n=PARTICLE_SIZE)
+    def create_particle():
+        particle = creator.Particle()
+        particle.extend([random.uniform(0, max([job.max_duration for job in jobs])) for _ in range(PARTICLE_SIZE)])
+        particle.speed = [random.uniform(0, 1) for _ in range(PARTICLE_SIZE)]
+        particle.pmin = [0] * PARTICLE_SIZE
+        particle.pmax = [max([job.max_duration for job in jobs])] * PARTICLE_SIZE
+        particle.best = creator.Particle(particle)
+        particle.best.fitness.values = toolbox.evaluate(particle)
+        return particle
 
-    toolbox.register("population", tools.initRepeat, list, toolbox.particle)
+    toolbox = base.Toolbox()
+    toolbox.register("particle", create_particle)
+    toolbox.register("population", lambda: [toolbox.particle() for _ in range(POPULATION_SIZE)])
     toolbox.register("mate", tools.cxBlend, alpha=0.5)
     toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.2)
     toolbox.register("select", tools.selBest)
     toolbox.register("evaluate", evaluate, jobs=jobs)
 
     # Initialize the particle population
-    population = toolbox.population(n=POPULATION_SIZE)
+    population = toolbox.population()
 
-    # Initialize particle attributes (speed, pmin, pmax, best)
-    for particle in population:
-        particle.speed = [random.uniform(-1, 1) for _ in range(PARTICLE_SIZE)]
-        particle.pmin = [0] * PARTICLE_SIZE
-        particle.pmax = [max([job.max_duration for job in jobs])] * PARTICLE_SIZE
-        particle.best = particle
-
-    # Predict job durations for jobs without historical data
-    predict_job_durations(jobs, historical_data)
-
+    # predict_job_durations(jobs, historical_data)
     # PSO algorithm
     for iteration in range(ITERATIONS):
         # Simulate uncertainties in resource availability for each iteration
@@ -167,6 +160,7 @@ def create_production_schedule(jobs, company_calendar, resource_calendars, histo
 
             # Find the particle index corresponding to the job
             particle_index = jobs.index(job)
+            current_time = 0
 
             # Check if the job can be scheduled at the current time
             if check_time_window(job, current_time) and check_resource_availability(job, resource_calendars,
@@ -197,7 +191,9 @@ def create_production_schedule(jobs, company_calendar, resource_calendars, histo
                 fitness = toolbox.evaluate(population[particle_index])
 
                 # Update personal best if the current position is better
-                if fitness > population[particle_index].best.fitness:
+
+                compare_to = population[particle_index].best.fitness.values
+                if fitness > compare_to:
                     population[particle_index].best = creator.Particle(population[particle_index])
                     population[particle_index].best.fitness.values = fitness
 
@@ -221,12 +217,12 @@ def create_production_schedule(jobs, company_calendar, resource_calendars, histo
 # Example usage
 if __name__ == "__main__":
     company_calendar = ProductionCalendar(
-        [(8, 12), (13, 17)])  # Company works from 8 am to 5 pm with a break from 12 pm to 1 pm
+        [(0, 24)])  # Company works from 8 am to 5 pm with a break from 12 pm to 1 pm
 
     resource_calendars = {
-        "resource1": ProductionCalendar([(8, 12), (13, 17)]),
-        "resource2": ProductionCalendar([(9, 12), (13, 18)]),
-        "resource3": ProductionCalendar([(8, 12), (13, 16)]),
+        "resource1": ProductionCalendar([(0, 24)]),
+        "resource2": ProductionCalendar([(0, 24)]),
+        "resource3": ProductionCalendar([(0, 24)]),
     }
 
 
@@ -253,12 +249,13 @@ if __name__ == "__main__":
             self.alternative_resources = alternative_resources if alternative_resources else []
 
 
-    job1 = UncertainProductionJob(1, "Job1", 4, 6, {"resource1": 2, "resource2": 1}, time_window=(8, 12), deadline=15)
-    job2 = UncertainProductionJob(2, "Job2", 2, 4, {"resource1": 1, "resource3": 3}, deadline=20,
+    job1 = UncertainProductionJob(1, "Job1", 4, 6, {"resource1": 2, "resource2": 1}, time_window=(0, 24), deadline=15)
+    job2 = UncertainProductionJob(2, "Job2", 2, 4, {"resource1": 1, "resource3": 3}, time_window=(0, 24), deadline=20,
                                   alternative_resources=["resource2"])
     job3 = UncertainProductionJob(3, "Job3", 3, 5, {"resource2": 2, "resource3": 1}, dependencies=[1, 2],
-                                  time_window=(13, 16))
-    job4 = UncertainProductionJob(4, "Job4", 1, 3, {"resource1": 1, "resource2": 1}, dependencies=[2])
+                                  time_window=(0, 24), deadline=24)
+    job4 = UncertainProductionJob(4, "Job4", 1, 3, {"resource1": 1, "resource2": 1}, time_window=(0, 24),
+                                  dependencies=[2], deadline=24)
 
     jobs = [job1, job2, job3, job4]
 
