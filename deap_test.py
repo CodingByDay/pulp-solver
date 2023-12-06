@@ -129,8 +129,9 @@ def create_production_schedule(jobs, company_calendar, resource_calendars, histo
 
     # Create a toolbox for the PSO algorithm
     toolbox = base.Toolbox()
-    toolbox.register("particle", tools.initRepeat, creator.Particle, random.uniform, a=0,
-                     b=max([job.max_duration for job in jobs]), n=PARTICLE_SIZE)
+    toolbox.register("particle", tools.initRepeat, creator.Particle,
+                     lambda: random.uniform(0, max([job.max_duration for job in jobs])), n=PARTICLE_SIZE)
+
     toolbox.register("population", tools.initRepeat, list, toolbox.particle)
     toolbox.register("mate", tools.cxBlend, alpha=0.5)
     toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.2)
@@ -263,11 +264,7 @@ if __name__ == "__main__":
 
     # Historical data for duration prediction (for demonstration purposes)
     historical_data = [
-        UncertainProductionJob(5, "Job5", 3, 5, {"resource1": 2, "resource2": 1}, time_window=(8, 12),
-                               actual_duration=4),
-        UncertainProductionJob(6, "Job6", 2, 4, {"resource1": 1, "resource3": 3}, actual_duration=3),
-        UncertainProductionJob(7, "Job7", 3, 5, {"resource2": 2, "resource3": 1}, dependencies=[5, 6],
-                               time_window=(13, 16), actual_duration=5)
+
     ]
 
     scheduled_jobs = create_production_schedule(jobs, company_calendar, resource_calendars, historical_data)
